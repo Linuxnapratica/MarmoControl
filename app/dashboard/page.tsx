@@ -147,6 +147,24 @@ export default function DashboardPage() {
              finalizedDate.getFullYear() === today.getFullYear();
     }).length;
 
+    const slabsAcidoToday = rawSlabs.filter(s => {
+      if (s.status !== 'acido' || !s.acidDate) return false;
+      const acidDate = new Date(s.acidDate);
+      const today = new Date();
+      return acidDate.getDate() === today.getDate() && 
+             acidDate.getMonth() === today.getMonth() && 
+             acidDate.getFullYear() === today.getFullYear();
+    }).length;
+
+    const slabsResinaToday = rawSlabs.filter(s => {
+      if (s.status !== 'resina' || !s.resinaDate) return false;
+      const resinaDate = new Date(s.resinaDate);
+      const today = new Date();
+      return resinaDate.getDate() === today.getDate() && 
+             resinaDate.getMonth() === today.getMonth() && 
+             resinaDate.getFullYear() === today.getFullYear();
+    }).length;
+
     const activities = rawSlabs
       .slice()
       .sort((a, b) => {
@@ -181,6 +199,8 @@ export default function DashboardPage() {
       producingM2: producing.reduce((acc, curr) => acc + (curr.area || 0), 0),
       slabsSerradasToday,
       slabsPolidasToday,
+      slabsAcidoToday,
+      slabsResinaToday,
       stages,
       activities
     };
@@ -410,7 +430,7 @@ export default function DashboardPage() {
             Atividade Diária
             <Clock className="w-4 h-4 text-slate-300" />
           </h2>
-          <div className="grid grid-cols-1 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                <div className="flex items-center gap-3">
                  <div className="bg-blue-600 text-white p-2 rounded-lg">
@@ -422,6 +442,31 @@ export default function DashboardPage() {
                  </div>
                </div>
             </div>
+            
+            <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
+               <div className="flex items-center gap-3">
+                 <div className="bg-amber-600 text-white p-2 rounded-lg">
+                   <FlaskConical className="w-4 h-4" />
+                 </div>
+                 <div>
+                   <p className="text-xs font-bold text-amber-900 leading-none mb-1">Ácido Hoje</p>
+                   <p className="text-sm text-amber-700 font-medium">{statsData.slabsAcidoToday} chapas no ácido hoje</p>
+                 </div>
+               </div>
+            </div>
+
+            <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+               <div className="flex items-center gap-3">
+                 <div className="bg-purple-600 text-white p-2 rounded-lg">
+                   <Beaker className="w-4 h-4" />
+                 </div>
+                 <div>
+                   <p className="text-xs font-bold text-purple-900 leading-none mb-1">Resina Hoje</p>
+                   <p className="text-sm text-purple-700 font-medium">{statsData.slabsResinaToday} chapas resinadas hoje</p>
+                 </div>
+               </div>
+            </div>
+
             <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
                <div className="flex items-center gap-3">
                  <div className="bg-emerald-600 text-white p-2 rounded-lg">
