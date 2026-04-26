@@ -78,7 +78,13 @@ export default function DashboardPage() {
         resina: { count: 0, area: 0 },
         polimento: { count: 0, area: 0 }
       },
-      activities: []
+      activities: [],
+      movs: {
+        serragem: { iniciadas: 0, paraAcido: 0, paraPolimento: 0 },
+        acido: { recebidas: 0, paraResina: 0, paraPolimento: 0 },
+        resina: { recebidas: 0, paraPolimento: 0 },
+        polimento: { recebidas: 0, finalizadas: 0 }
+      }
     };
 
     const filteredSlabs = rawSlabs.filter(s => {
@@ -129,40 +135,67 @@ export default function DashboardPage() {
       }
     });
 
-    const startedToday = rawSlabs.filter(s => {
-      const date = s.createdAt?.toDate ? s.createdAt.toDate() : (s.createdAt ? new Date(s.createdAt) : null);
-      if (!date) return false;
-      const t = new Date();
-      return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
-    }).length;
+    const isToday = (dateStr: any) => {
+      if (!dateStr) return false;
+      try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return false;
+        const t = new Date();
+        return d.getDate() === t.getDate() && d.getMonth() === t.getMonth() && d.getFullYear() === t.getFullYear();
+      } catch {
+        return false;
+      }
+    };
 
-    const sentToAcidToday = rawSlabs.filter(s => {
-      if (!s.acidDate) return false;
-      const date = new Date(s.acidDate);
-      const t = new Date();
-      return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
-    }).length;
+    const isTodayFB = (timestamp: any) => {
+      const d = timestamp?.toDate ? timestamp.toDate() : (timestamp ? new Date(timestamp) : null);
+      if (!d) return false;
+      try {
+        const date = new Date(d);
+        if (isNaN(date.getTime())) return false;
+        const t = new Date();
+        return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
+      } catch {
+        return false;
+      }
+    };
 
-    const sentToResinaToday = rawSlabs.filter(s => {
-      if (!s.resinaDate) return false;
-      const date = new Date(s.resinaDate);
-      const t = new Date();
-      return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
-    }).length;
+    const movs = {
+      serragem: { iniciadas: 0, paraAcido: 0, paraPolimento: 0 },
+      acido: { recebidas: 0, paraResina: 0, paraPolimento: 0 },
+      resina: { recebidas: 0, paraPolimento: 0 },
+      polimento: { recebidas: 0, finalizadas: 0 }
+    };
 
-    const sentToPolimentoToday = rawSlabs.filter(s => {
-      if (!s.polimentoDate) return false;
-      const date = new Date(s.polimentoDate);
-      const t = new Date();
-      return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
-    }).length;
-
-    const finishedToday = rawSlabs.filter(s => {
-      if (!s.finalizedDate) return false;
-      const date = new Date(s.finalizedDate);
-      const t = new Date();
-      return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
-    }).length;
+    rawSlabs.forEach(s => {
+      if (isTodayFB(s.createdAt)) movs.serragem.iniciadas++;
+      
+      if (isToday(s.acidDate)) {
+        movs.acido.recebidas++;
+        // Assumed from serragem if acidDate is set today
+        movs.serragem.paraAcido++;
+      }
+      
+      if (isToday(s.resinaDate)) {
+        movs.resina.recebidas++;
+        movs.acido.paraResina++;
+      }
+      
+      if (isToday(s.polimentoDate)) {
+        movs.polimento.recebidas++;
+        if (s.resinaDate) {
+          movs.resina.paraPolimento++;
+        } else if (s.acidDate) {
+          movs.acido.paraPolimento++;
+        } else {
+          movs.serragem.paraPolimento++;
+        }
+      }
+      
+      if (isToday(s.finalizedDate)) {
+        movs.polimento.finalizadas++;
+      }
+    });
 
     const activities = rawSlabs
       .slice()
@@ -196,11 +229,7 @@ export default function DashboardPage() {
       estoqueM2: estoqueSlabs.reduce((acc, curr) => acc + (curr.area || 0), 0),
       producingCount: producing.length,
       producingM2: producing.reduce((acc, curr) => acc + (curr.area || 0), 0),
-      startedToday,
-      sentToAcidToday,
-      sentToResinaToday,
-      sentToPolimentoToday,
-      finishedToday,
+      movs,
       stages,
       activities
     };
@@ -438,9 +467,16 @@ export default function DashboardPage() {
                  </div>
                  <div>
                    <p className="text-xs font-bold text-blue-900 leading-none mb-1">Serragem Hoje</p>
-                   <div className="space-y-0.5">
-                     <p className="text-[11px] text-blue-700 font-medium">{statsData.startedToday} chapas iniciadas hoje</p>
-                     <p className="text-[11px] text-blue-600/70 font-bold">{statsData.sentToAcidToday} enviadas para ácido</p>
+                   <div className="space-y-0.5 mt-1">
+                     <p className="text-[11px] text-blue-700 font-medium">
+                       {statsData.movs.serragem.iniciadas} chapas iniciadas hoje
+                     </p>
+                     <p className="text-[10px] text-blue-600/70 font-bold">
+                       {statsData.movs.serragem.paraAcido} enviadas para ácido
+                     </p>
+                     <p className="text-[10px] text-blue-600/70 font-bold">
+                       {statsData.movs.serragem.paraPolimento} enviadas para polimento
+                     </p>
                    </div>
                  </div>
                </div>
@@ -453,9 +489,16 @@ export default function DashboardPage() {
                  </div>
                  <div>
                    <p className="text-xs font-bold text-amber-900 leading-none mb-1">Processo Ácido</p>
-                   <div className="space-y-0.5">
-                     <p className="text-[11px] text-amber-700 font-medium">{statsData.sentToAcidToday} recebidas da serragem</p>
-                     <p className="text-[11px] text-amber-600/70 font-bold">{statsData.sentToResinaToday} enviadas para resina</p>
+                   <div className="space-y-0.5 mt-1">
+                     <p className="text-[11px] text-amber-700 font-medium">
+                       {statsData.movs.acido.recebidas} recebidas hoje
+                     </p>
+                     <p className="text-[10px] text-amber-600/70 font-bold">
+                       {statsData.movs.acido.paraResina} enviadas para resina
+                     </p>
+                     <p className="text-[10px] text-amber-600/70 font-bold">
+                       {statsData.movs.acido.paraPolimento} enviadas p/ polimento
+                     </p>
                    </div>
                  </div>
                </div>
@@ -468,9 +511,13 @@ export default function DashboardPage() {
                  </div>
                  <div>
                    <p className="text-xs font-bold text-purple-900 leading-none mb-1">Resinagem</p>
-                   <div className="space-y-0.5">
-                     <p className="text-[11px] text-purple-700 font-medium">{statsData.sentToResinaToday} recebidas do ácido</p>
-                     <p className="text-[11px] text-purple-600/70 font-bold">{statsData.sentToPolimentoToday} enviadas p/ polimento</p>
+                   <div className="space-y-0.5 mt-1">
+                     <p className="text-[11px] text-purple-700 font-medium">
+                       {statsData.movs.resina.recebidas} recebidas hoje
+                     </p>
+                     <p className="text-[10px] text-purple-600/70 font-bold">
+                       {statsData.movs.resina.paraPolimento} enviadas p/ polimento
+                     </p>
                    </div>
                  </div>
                </div>
@@ -483,9 +530,13 @@ export default function DashboardPage() {
                  </div>
                  <div>
                    <p className="text-xs font-bold text-emerald-900 leading-none mb-1">Finalização</p>
-                   <div className="space-y-0.5">
-                     <p className="text-[11px] text-emerald-700 font-medium">{statsData.sentToPolimentoToday} recebidas da resina</p>
-                     <p className="text-[11px] text-emerald-600/70 font-bold">{statsData.finishedToday} chapas em estoque</p>
+                   <div className="space-y-0.5 mt-1">
+                     <p className="text-[11px] text-emerald-700 font-medium">
+                       {statsData.movs.polimento.recebidas} recebidas hoje
+                     </p>
+                     <p className="text-[10px] text-emerald-600/70 font-bold">
+                       {statsData.movs.polimento.finalizadas} chapas em estoque
+                     </p>
                    </div>
                  </div>
                </div>
