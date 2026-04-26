@@ -1,0 +1,153 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        isBootstrapAdmin() || (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        )
+      );
+    }
+
+    function isBootstrapAdmin() {
+      return request.auth.token.email == 'marioalbuquerquelins@gmail.com';
+    }
+
+    function hasPermission(permission) {
+      return isSignedIn() && (
+        isAdmin() || (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          ('permissions' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions != null &&
+          (permission in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions[permission] == true
+        )
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    // Validation for User entity
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role', 'createdAt']) &&
+             data.keys().size() >= 4 && data.keys().size() <= 25 &&
+             data.name is string && data.name.size() <= 250 &&
+             data.email is string && data.email.size() <= 250 &&
+             data.role in ['admin', 'member'] &&
+             (data.createdAt is string || data.createdAt is timestamp) &&
+             (!('uid' in data) || data.uid is string) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 3000)) &&
+             (!('permissions' in data) || (data.permissions is map || data.permissions == null));
+    }
+
+    // Validation for BlockEntry
+    function isValidBlockEntry(data) {
+      return data.keys().hasAll(['blockId', 'type', 'length', 'height', 'width', 'volume', 'entryDate', 'userId', 'userName', 'createdAt']) &&
+             data.blockId is string && data.blockId.size() <= 100 &&
+             data.type is string && data.type.size() <= 100 &&
+             data.length is number && data.height is number && data.width is number && data.volume is number &&
+             data.entryDate is string &&
+             data.userId is string &&
+             data.userName is string;
+    }
+
+    // Validation for SlabEntry
+    function isValidSlabEntry(data) {
+      return data.keys().hasAll(['parentBlockId', 'slabId', 'length', 'height', 'area', 'userId', 'userName', 'createdAt']) &&
+             data.parentBlockId is string &&
+             data.slabId is string &&
+             data.length is number && data.height is number && data.area is number &&
+             data.userId is string &&
+             data.userName is string;
+    }
+
+    // Validation for AuditLog
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['event', 'timestamp', 'type']) &&
+             data.event is string && data.event.size() <= 1000 &&
+             data.type in ["login_success", "login_failure", "user_create", "user_update", "user_delete", "security_access"];
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (isAdmin() || resource.data.email == request.auth.token.email);
+      
+      allow create: if isSignedIn() && (
+        // Allow user to create their own record as 'member'
+        (isOwner(userId) && request.resource.data.role == 'member' && isValidUser(request.resource.data)) ||
+        // Allow bootstrap admin to create their own record as 'admin'
+        (isOwner(userId) && isBootstrapAdmin() && request.resource.data.role == 'admin' && isValidUser(request.resource.data)) ||
+        // Admin can create any user (including pending ones)
+        (isAdmin() && isValidUser(request.resource.data))
+      );
+      
+      allow update: if isSignedIn() && (
+        // User can update their own profile or lastOnline
+        (isOwner(userId) && (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastOnline']) ||
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photoURL', 'phone', 'birthDate', 'address', 'addressNumber', 'neighborhood', 'city', 'state', 'cep'])
+        )) ||
+        // Admin can update anything as long as the document remains valid
+        (isAdmin() && isValidUser(request.resource.data))
+      );
+      
+      allow delete: if isSignedIn() && (isAdmin() || (resource.data.email == request.auth.token.email && resource.data.isPending == true));
+    }
+
+    match /blockEntries/{entryId} {
+      allow read: if hasPermission('producao');
+      allow create: if (isAdmin() || hasPermission('producao')) &&
+                    request.resource.data.userId == request.auth.uid &&
+                    isValidBlockEntry(request.resource.data);
+      allow update: if (isAdmin() || hasPermission('producao')) &&
+                    isValidBlockEntry(request.resource.data);
+      allow delete: if isAdmin() || (hasPermission('producao') && resource.data.userId == request.auth.uid);
+    }
+
+    match /materialTypes/{typeId} {
+      allow read: if isSignedIn();
+      allow create, update: if hasPermission('producao');
+      allow delete: if isAdmin();
+    }
+
+    match /slabEntries/{slabId} {
+      allow read: if hasPermission('producao');
+      allow create: if (isAdmin() || hasPermission('producao')) &&
+                    request.resource.data.userId == request.auth.uid &&
+                    isValidSlabEntry(request.resource.data);
+      allow update: if (isAdmin() || hasPermission('producao')) &&
+                    isValidSlabEntry(request.resource.data);
+      allow delete: if isAdmin() || (hasPermission('producao') && resource.data.userId == request.auth.uid);
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      // Allow creation for logged in users (most events) or login_failure (can be anonymous)
+      allow create: if (isSignedIn() || (request.resource.data.type == 'login_failure')) && 
+                    isValidAuditLog(request.resource.data);
+      allow update, delete: if false; // Immutable logs
+    }
+  }
+}

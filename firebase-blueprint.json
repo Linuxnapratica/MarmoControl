@@ -1,0 +1,122 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Store user information, details and screen-level permissions.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "function": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "address": { "type": "string" },
+        "addressNumber": { "type": "string" },
+        "neighborhood": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "cep": { "type": "string" },
+        "role": { 
+          "type": "string",
+          "enum": ["admin", "member"]
+        },
+        "permissions": {
+          "type": "object",
+          "description": "Map of screen IDs to booleans"
+        },
+        "isPending": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "BlockEntry": {
+      "title": "Block Entry",
+      "description": "Records the entry of marble/granite blocks into production.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "blockId": { "type": "string" },
+        "type": { "type": "string" },
+        "length": { "type": "number" },
+        "height": { "type": "number" },
+        "width": { "type": "number" },
+        "volume": { "type": "number" },
+        "entryDate": { "type": "string", "format": "date" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["blockId", "type", "length", "height", "width", "volume", "entryDate", "userId"]
+    },
+    "MaterialType": {
+      "title": "Material Type",
+      "description": "Registered material types for blocks.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "SlabEntry": {
+      "title": "Slab Entry",
+      "description": "Records the result of sawing a block into slabs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "parentBlockId": { "type": "string" },
+        "slabId": { "type": "string" },
+        "length": { "type": "number" },
+        "height": { "type": "number" },
+        "area": { "type": "number" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["parentBlockId", "slabId", "length", "height", "area", "userId"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "Records important system events for security auditing.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "event": { "type": "string" },
+        "details": { "type": "string" },
+        "targetUserId": { "type": "string" },
+        "targetUserName": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { 
+          "type": "string", 
+          "enum": ["login_success", "login_failure", "user_create", "user_update", "user_delete", "security_access"] 
+        }
+      },
+      "required": ["event", "timestamp", "type"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and permissions."
+    },
+    "/blockEntries/{entryId}": {
+      "schema": "BlockEntry",
+      "description": "History of block entries."
+    },
+    "/materialTypes/{typeId}": {
+      "schema": "MaterialType",
+      "description": "List of available material types."
+    },
+    "/slabEntries/{slabId}": {
+      "schema": "SlabEntry",
+      "description": "History of slab entries (serragem)."
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "System audit logs."
+    }
+  }
+}

@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@media print {
+  /* Universal printer settings */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Hide everything on the body */
+  body {
+    visibility: hidden !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Show only the print-only container and its content */
+  .print-only {
+    visibility: visible !important;
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    margin: 0 !important;
+    padding: 1.5cm !important;
+    background: white !important;
+    z-index: 999999 !important;
+  }
+
+  .print-only * {
+    visibility: visible !important;
+  }
+
+  /* Explicitly remove UI artifacts from parents */
+  main, nav, aside, [role="main"], .min-h-screen {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Prevent browser-inserted page info if supported */
+  @page {
+    margin: 0;
+  }
+}
+
+.print-only {
+  display: none;
+}

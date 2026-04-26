@@ -1,0 +1,6 @@
+{
+  "name": "MarmoControl",
+  "description": "Sistema de controle e gestão com autenticação, dashboard e gerenciamento de usuários para administradores.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
