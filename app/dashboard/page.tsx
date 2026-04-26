@@ -129,40 +129,39 @@ export default function DashboardPage() {
       }
     });
 
-    const slabsSerradasToday = rawSlabs.filter(s => {
-      const createdAtDate = s.createdAt?.toDate ? s.createdAt.toDate() : (s.createdAt ? new Date(s.createdAt) : null);
-      if (!createdAtDate) return false;
-      const today = new Date();
-      return createdAtDate.getDate() === today.getDate() && 
-             createdAtDate.getMonth() === today.getMonth() && 
-             createdAtDate.getFullYear() === today.getFullYear();
+    const startedToday = rawSlabs.filter(s => {
+      const date = s.createdAt?.toDate ? s.createdAt.toDate() : (s.createdAt ? new Date(s.createdAt) : null);
+      if (!date) return false;
+      const t = new Date();
+      return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
     }).length;
 
-    const slabsPolidasToday = rawSlabs.filter(s => {
-      if (s.status !== 'estoque' || !s.finalizedDate) return false;
-      const finalizedDate = new Date(s.finalizedDate);
-      const today = new Date();
-      return finalizedDate.getDate() === today.getDate() && 
-             finalizedDate.getMonth() === today.getMonth() && 
-             finalizedDate.getFullYear() === today.getFullYear();
+    const sentToAcidToday = rawSlabs.filter(s => {
+      if (!s.acidDate) return false;
+      const date = new Date(s.acidDate);
+      const t = new Date();
+      return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
     }).length;
 
-    const slabsAcidoToday = rawSlabs.filter(s => {
-      if (s.status !== 'acido' || !s.acidDate) return false;
-      const acidDate = new Date(s.acidDate);
-      const today = new Date();
-      return acidDate.getDate() === today.getDate() && 
-             acidDate.getMonth() === today.getMonth() && 
-             acidDate.getFullYear() === today.getFullYear();
+    const sentToResinaToday = rawSlabs.filter(s => {
+      if (!s.resinaDate) return false;
+      const date = new Date(s.resinaDate);
+      const t = new Date();
+      return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
     }).length;
 
-    const slabsResinaToday = rawSlabs.filter(s => {
-      if (s.status !== 'resina' || !s.resinaDate) return false;
-      const resinaDate = new Date(s.resinaDate);
-      const today = new Date();
-      return resinaDate.getDate() === today.getDate() && 
-             resinaDate.getMonth() === today.getMonth() && 
-             resinaDate.getFullYear() === today.getFullYear();
+    const sentToPolimentoToday = rawSlabs.filter(s => {
+      if (!s.polimentoDate) return false;
+      const date = new Date(s.polimentoDate);
+      const t = new Date();
+      return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
+    }).length;
+
+    const finishedToday = rawSlabs.filter(s => {
+      if (!s.finalizedDate) return false;
+      const date = new Date(s.finalizedDate);
+      const t = new Date();
+      return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
     }).length;
 
     const activities = rawSlabs
@@ -197,10 +196,11 @@ export default function DashboardPage() {
       estoqueM2: estoqueSlabs.reduce((acc, curr) => acc + (curr.area || 0), 0),
       producingCount: producing.length,
       producingM2: producing.reduce((acc, curr) => acc + (curr.area || 0), 0),
-      slabsSerradasToday,
-      slabsPolidasToday,
-      slabsAcidoToday,
-      slabsResinaToday,
+      startedToday,
+      sentToAcidToday,
+      sentToResinaToday,
+      sentToPolimentoToday,
+      finishedToday,
       stages,
       activities
     };
@@ -437,8 +437,11 @@ export default function DashboardPage() {
                    <Layers className="w-4 h-4" />
                  </div>
                  <div>
-                   <p className="text-xs font-bold text-blue-900 leading-none mb-1">Cortes Hoje</p>
-                   <p className="text-sm text-blue-700 font-medium">{statsData.slabsSerradasToday} chapas serradas hoje</p>
+                   <p className="text-xs font-bold text-blue-900 leading-none mb-1">Serragem Hoje</p>
+                   <div className="space-y-0.5">
+                     <p className="text-[11px] text-blue-700 font-medium">{statsData.startedToday} chapas iniciadas hoje</p>
+                     <p className="text-[11px] text-blue-600/70 font-bold">{statsData.sentToAcidToday} enviadas para ácido</p>
+                   </div>
                  </div>
                </div>
             </div>
@@ -449,8 +452,11 @@ export default function DashboardPage() {
                    <FlaskConical className="w-4 h-4" />
                  </div>
                  <div>
-                   <p className="text-xs font-bold text-amber-900 leading-none mb-1">Ácido Hoje</p>
-                   <p className="text-sm text-amber-700 font-medium">{statsData.slabsAcidoToday} chapas no ácido hoje</p>
+                   <p className="text-xs font-bold text-amber-900 leading-none mb-1">Processo Ácido</p>
+                   <div className="space-y-0.5">
+                     <p className="text-[11px] text-amber-700 font-medium">{statsData.sentToAcidToday} recebidas da serragem</p>
+                     <p className="text-[11px] text-amber-600/70 font-bold">{statsData.sentToResinaToday} enviadas para resina</p>
+                   </div>
                  </div>
                </div>
             </div>
@@ -461,8 +467,11 @@ export default function DashboardPage() {
                    <Beaker className="w-4 h-4" />
                  </div>
                  <div>
-                   <p className="text-xs font-bold text-purple-900 leading-none mb-1">Resina Hoje</p>
-                   <p className="text-sm text-purple-700 font-medium">{statsData.slabsResinaToday} chapas resinadas hoje</p>
+                   <p className="text-xs font-bold text-purple-900 leading-none mb-1">Resinagem</p>
+                   <div className="space-y-0.5">
+                     <p className="text-[11px] text-purple-700 font-medium">{statsData.sentToResinaToday} recebidas do ácido</p>
+                     <p className="text-[11px] text-purple-600/70 font-bold">{statsData.sentToPolimentoToday} enviadas p/ polimento</p>
+                   </div>
                  </div>
                </div>
             </div>
@@ -473,8 +482,11 @@ export default function DashboardPage() {
                    <TrendingUp className="w-4 h-4" />
                  </div>
                  <div>
-                   <p className="text-xs font-bold text-emerald-900 leading-none mb-1">Finalizadas Hoje</p>
-                   <p className="text-sm text-emerald-700 font-medium">{statsData.slabsPolidasToday} chapas polidas hoje</p>
+                   <p className="text-xs font-bold text-emerald-900 leading-none mb-1">Finalização</p>
+                   <div className="space-y-0.5">
+                     <p className="text-[11px] text-emerald-700 font-medium">{statsData.sentToPolimentoToday} recebidas da resina</p>
+                     <p className="text-[11px] text-emerald-600/70 font-bold">{statsData.finishedToday} chapas em estoque</p>
+                   </div>
                  </div>
                </div>
             </div>
