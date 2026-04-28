@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithGoogle, signInWithEmail, signUpWithEmail } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
+import { useSettings } from '@/lib/settings-context';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 import { logEvent } from '@/lib/audit';
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 
 export default function LoginPage() {
+  const { settings } = useSettings();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -119,12 +121,16 @@ export default function LoginPage() {
         {/* Left Side - Info */}
         <div className="hidden lg:flex flex-col justify-between p-12 bg-blue-600 text-white relative overflow-hidden">
           <div className="relative z-10">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center mb-6">
-              <LayoutDashboard className="w-6 h-6" />
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center mb-6 overflow-hidden">
+              {settings.loginLogoUrl || settings.logoUrl ? (
+                <img src={settings.loginLogoUrl || settings.logoUrl} alt="Logo" className="w-8 h-8 object-contain" />
+              ) : (
+                <LayoutDashboard className="w-6 h-6" />
+              )}
             </div>
-            <h2 className="text-4xl font-bold tracking-tight mb-4">MarmoControl</h2>
+            <h2 className="text-4xl font-bold tracking-tight mb-4">{settings.appName}</h2>
             <p className="text-blue-100 text-lg max-w-sm">
-              Gestão inteligente para marmorarias. Controle sua produção, estoque e equipe em um só lugar.
+              {settings.loginWelcomeSubtitle}
             </p>
           </div>
 
@@ -149,7 +155,7 @@ export default function LoginPage() {
           <div className="max-w-sm mx-auto w-full">
             <div className="mb-8 text-center lg:text-left">
               <h3 className="text-2xl font-bold text-slate-900 mb-2">
-                {mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}
+                {mode === 'login' ? settings.loginWelcomeTitle : 'Crie sua conta'}
               </h3>
               <p className="text-slate-500 text-sm">
                 {mode === 'login' 

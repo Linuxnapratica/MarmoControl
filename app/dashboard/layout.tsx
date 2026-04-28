@@ -2,6 +2,7 @@
 
 import React, { Suspense } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { useSettings } from '@/lib/settings-context';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
 import { 
@@ -16,7 +17,8 @@ import {
   ShieldAlert,
   Clock,
   ShieldCheck,
-  ShoppingCart
+  ShoppingCart,
+  Settings
 } from 'lucide-react';
 import { logout } from '@/lib/firebase';
 import Link from 'next/link';
@@ -36,6 +38,7 @@ function SidebarNav({ isSidebarOpen, expandedMenus, toggleMenu, profile, isAdmin
     },
     { name: 'Saídas', icon: ShoppingCart, path: '/dashboard/saidas', permission: 'saidas' },
     { name: 'Usuário', icon: Users, path: '/dashboard/users', adminOnly: true },
+    { name: 'Configurações', icon: Settings, path: '/dashboard/settings', adminOnly: true },
     { name: 'Logs de Auditoria', icon: ShieldAlert, path: '/dashboard/audit-logs', adminOnly: true },
     { name: 'Perfil', icon: User, path: '/dashboard/perfil' },
   ];
@@ -115,6 +118,7 @@ function SidebarNav({ isSidebarOpen, expandedMenus, toggleMenu, profile, isAdmin
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, profile, isAdmin, isAuthorized, hasPermission, loading } = useAuth();
+  const { settings } = useSettings();
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
@@ -163,7 +167,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border border-slate-200 text-center space-y-6"
         >
           <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
-            <Clock className="w-10 h-10" />
+            {settings.logoUrl ? (
+              <img src={settings.logoUrl} alt={settings.appName} className="w-12 h-12 object-contain" />
+            ) : (
+              <Clock className="w-10 h-10" />
+            )}
           </div>
           
           <div className="space-y-2">
@@ -192,7 +200,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           
           <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">
-            MARMOCONTROL - SISTEMA DE GESTÃO
+            {settings.appName.toUpperCase()} - SISTEMA DE GESTÃO
           </p>
         </motion.div>
       </div>
@@ -215,12 +223,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         } bg-slate-900 text-white flex flex-col shrink-0 transition-all duration-300 fixed inset-y-0 z-20 no-print`}
       >
         <div className="p-6 border-b border-slate-800 shrink-0">
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-xs shrink-0">
-              MC
+          <Link href="/dashboard" className="text-xl font-bold tracking-tight text-white flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-xs shrink-0 overflow-hidden">
+              {settings.logoUrl ? (
+                <img src={settings.logoUrl} alt={settings.appName} className="w-full h-full object-cover" />
+              ) : (
+                settings.appName.substring(0, 2).toUpperCase()
+              )}
             </div>
-            {isSidebarOpen && <span>MarmoControl</span>}
-          </h1>
+            {isSidebarOpen && <span>{settings.appName}</span>}
+          </Link>
         </div>
 
         <Suspense fallback={<div className="flex-1" />}>

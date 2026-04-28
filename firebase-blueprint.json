@@ -129,9 +129,27 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["clientId", "slabIds", "totalM2", "outletDate", "userId"]
+    },
+    "AppSetting": {
+      "title": "App Setting",
+      "description": "Global application configuration.",
+      "type": "object",
+      "properties": {
+        "appName": { "type": "string", "default": "MarmoControl" },
+        "logoUrl": { "type": "string" },
+        "loginLogoUrl": { "type": "string" },
+        "loginWelcomeTitle": { "type": "string", "default": "Entre na sua conta" },
+        "loginWelcomeSubtitle": { "type": "string", "default": "Sistema de gestão inteligente para marmorarias." },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      }
     }
   },
   "firestore": {
+    "/settings/{settingId}": {
+      "schema": "AppSetting",
+      "description": "Global application configuration documents."
+    },
     "/users/{userId}": {
       "schema": "User",
       "description": "User profiles and permissions."

@@ -55,6 +55,11 @@ service cloud.firestore {
              hasPermission('quebrada');
     }
 
+    match /settings/{settingId} {
+      allow read: if true; // Public settings like name and logo needed for login screen
+      allow write: if isAdmin();
+    }
+
     function isValidId(id) {
       return id is string && id.size() <= 128;
     }
