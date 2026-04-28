@@ -27,29 +27,25 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    appName: '',
-    logoUrl: '',
-    loginLogoUrl: '',
-    loginWelcomeTitle: '',
-    loginWelcomeSubtitle: '',
+    appName: settings?.appName || '',
+    logoUrl: settings?.logoUrl || '',
+    loginLogoUrl: settings?.loginLogoUrl || '',
+    loginWelcomeTitle: settings?.loginWelcomeTitle || '',
+    loginWelcomeSubtitle: settings?.loginWelcomeSubtitle || '',
   });
 
-  useEffect(() => {
-    if (settings) {
-      const newFormData = {
-        appName: settings.appName || '',
-        logoUrl: settings.logoUrl || '',
-        loginLogoUrl: settings.loginLogoUrl || '',
-        loginWelcomeTitle: settings.loginWelcomeTitle || '',
-        loginWelcomeSubtitle: settings.loginWelcomeSubtitle || '',
-      };
-      
-      // Only update if data actually changed to avoid cascading renders
-      if (JSON.stringify(newFormData) !== JSON.stringify(formData)) {
-        setFormData(newFormData);
-      }
-    }
-  }, [settings, formData]);
+  // Since settings can load later, we update formData if it's still at defaults
+  const [hasDefaulted, setHasDefaulted] = useState(false);
+  if (settings && !settingsLoading && !hasDefaulted && formData.appName === '') {
+    setFormData({
+      appName: settings.appName || '',
+      logoUrl: settings.logoUrl || '',
+      loginLogoUrl: settings.loginLogoUrl || '',
+      loginWelcomeTitle: settings.loginWelcomeTitle || '',
+      loginWelcomeSubtitle: settings.loginWelcomeSubtitle || '',
+    });
+    setHasDefaulted(true);
+  }
 
   if (!isAdmin) {
     return (

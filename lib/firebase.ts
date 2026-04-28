@@ -15,10 +15,24 @@ export const storage = getStorage(app, `gs://${firebaseConfig.storageBucket}`);
 storage.maxOperationRetryTime = 20000; // 20s
 storage.maxUploadRetryTime = 20000;
 
-// Use initializeFirestore with experimentalForceLongPolling for better stability in proxy environments
+// Use initializeFirestore with settings for better stability
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
+  experimentalAutoDetectLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId);
+
+// Test connection on boot as per guidelines
+async function testConnection() {
+  try {
+    const testDoc = doc(db, '_connection_test_', 'ping');
+    await getDocFromServer(testDoc);
+    console.log("Firestore connection successful");
+  } catch (error: any) {
+    if (error.message?.includes('the client is offline') || error.code === 'unavailable') {
+      console.warn("Firestore appears to be offline or unreachable. Retrying with long polling...");
+    }
+  }
+}
+testConnection();
 
 export const googleProvider = new GoogleAuthProvider();
 
