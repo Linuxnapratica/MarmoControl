@@ -188,7 +188,10 @@ function ProducaoContent() {
 
   useEffect(() => {
     // Check permission
-    if (!user || (!hasPermission('producao') && !isAdmin)) return;
+    const hasAnyProductionPermission = isAdmin || hasPermission('producao') || 
+      ['entrada', 'serragem', 'acido', 'resina', 'polimento', 'estoque', 'quebrada'].some(p => hasPermission(p));
+
+    if (!user || !hasAnyProductionPermission) return;
 
     // Fetch block entries
     const qEntries = query(
@@ -864,35 +867,33 @@ function ProducaoContent() {
     doc.save(`${title.toLowerCase().replace(/\s+/g, '_')}.pdf`);
   };
 
-  // Stats calculation based on filtered data if searching
-  const displaySlabs = (searchTerm 
-    ? filteredSlabs.filter(s => s.status === 'serrada' || !s.status) 
-    : slabs.filter(s => s.status === 'serrada' || !s.status)).sort(sortSlabsByIdentification);
+  // Stats calculation based on filtered data
+  const displaySlabs = (filteredSlabs.filter(s => s.status === 'serrada' || !s.status)).sort(sortSlabsByIdentification);
   
   const totalSlabsCountResult = displaySlabs.length;
   const totalM2Result = displaySlabs.reduce((acc, curr) => acc + curr.area, 0).toFixed(2).replace('.', ',');
 
-  const displayBlocks = searchTerm ? filteredEntries : entries;
+  const displayBlocks = filteredEntries;
   const totalBlocksCount = displayBlocks.length;
   const totalVolume = displayBlocks.reduce((acc, curr) => acc + curr.volume, 0).toFixed(3).replace('.', ',');
 
-  const displayAcidSlabs = (searchTerm ? filteredSlabs.filter(s => s.status === 'acido') : slabs.filter(s => s.status === 'acido')).sort(sortSlabsByIdentification);
+  const displayAcidSlabs = (filteredSlabs.filter(s => s.status === 'acido')).sort(sortSlabsByIdentification);
   const totalAcidCount = displayAcidSlabs.length;
   const totalAcidM2 = displayAcidSlabs.reduce((acc, curr) => acc + curr.area, 0).toFixed(2).replace('.', ',');
 
-  const displayResinaSlabs = (searchTerm ? filteredSlabs.filter(s => s.status === 'resina') : slabs.filter(s => s.status === 'resina')).sort(sortSlabsByIdentification);
+  const displayResinaSlabs = (filteredSlabs.filter(s => s.status === 'resina')).sort(sortSlabsByIdentification);
   const totalResinaCount = displayResinaSlabs.length;
   const totalResinaM2 = displayResinaSlabs.reduce((acc, curr) => acc + curr.area, 0).toFixed(2).replace('.', ',');
 
-  const displayPolimentoSlabs = (searchTerm ? filteredSlabs.filter(s => s.status === 'polimento') : slabs.filter(s => s.status === 'polimento')).sort(sortSlabsByIdentification);
+  const displayPolimentoSlabs = (filteredSlabs.filter(s => s.status === 'polimento')).sort(sortSlabsByIdentification);
   const totalPolimentoCount = displayPolimentoSlabs.length;
   const totalPolimentoM2 = displayPolimentoSlabs.reduce((acc, curr) => acc + curr.area, 0).toFixed(2).replace('.', ',');
 
-  const displayEstoqueSlabs = (searchTerm ? filteredSlabs.filter(s => s.status === 'estoque') : slabs.filter(s => s.status === 'estoque')).sort(sortSlabsByIdentification);
+  const displayEstoqueSlabs = (filteredSlabs.filter(s => s.status === 'estoque')).sort(sortSlabsByIdentification);
   const totalEstoqueCount = displayEstoqueSlabs.length;
   const totalEstoqueM2 = displayEstoqueSlabs.reduce((acc, curr) => acc + curr.area, 0).toFixed(2).replace('.', ',');
 
-  const displayQuebradaSlabs = (searchTerm ? filteredSlabs.filter(s => s.status === 'quebrada') : slabs.filter(s => s.status === 'quebrada')).sort(sortSlabsByIdentification);
+  const displayQuebradaSlabs = (filteredSlabs.filter(s => s.status === 'quebrada')).sort(sortSlabsByIdentification);
   const totalQuebradaCount = displayQuebradaSlabs.length;
   const totalQuebradaM2 = displayQuebradaSlabs.reduce((acc, curr) => acc + curr.area, 0).toFixed(2).replace('.', ',');
 
