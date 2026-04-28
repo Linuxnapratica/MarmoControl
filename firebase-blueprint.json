@@ -95,6 +95,40 @@
         }
       },
       "required": ["event", "timestamp", "type"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Store client information for sales/outlets.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "document": { "type": "string", "description": "CPF or CNPJ" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "createdAt"]
+    },
+    "SlabOutlet": {
+      "title": "Slab Outlet",
+      "description": "Records the output (sale) of slabs to a client.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "slabIds": { "type": "array", "items": { "type": "string" } },
+        "totalM2": { "type": "number" },
+        "totalItems": { "type": "integer" },
+        "outletDate": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clientId", "slabIds", "totalM2", "outletDate", "userId"]
     }
   },
   "firestore": {
@@ -113,6 +147,14 @@
     "/slabEntries/{slabId}": {
       "schema": "SlabEntry",
       "description": "History of slab entries (serragem)."
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Registered clients."
+    },
+    "/slabOutlets/{outletId}": {
+      "schema": "SlabOutlet",
+      "description": "History of slab outputs/sales."
     },
     "/audit_logs/{logId}": {
       "schema": "AuditLog",

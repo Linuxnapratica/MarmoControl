@@ -94,11 +94,26 @@ service cloud.firestore {
              data.userName is string;
     }
 
+    // Validation for Client
+    function isValidClient(data) {
+      return data.keys().hasAll(['name', 'createdAt']) &&
+             data.name is string && data.name.size() <= 250;
+    }
+
+    // Validation for SlabOutlet
+    function isValidSlabOutlet(data) {
+      return data.keys().hasAll(['clientId', 'slabIds', 'totalM2', 'outletDate', 'userId']) &&
+             data.clientId is string &&
+             data.slabIds is list &&
+             data.totalM2 is number &&
+             data.userId is string;
+    }
+
     // Validation for AuditLog
     function isValidAuditLog(data) {
       return data.keys().hasAll(['event', 'timestamp', 'type']) &&
              data.event is string && data.event.size() <= 1000 &&
-             data.type in ["login_success", "login_failure", "user_create", "user_update", "user_delete", "security_access"];
+             data.type in ["login_success", "login_failure", "user_create", "user_update", "user_delete", "security_access", "user_auth_change"];
     }
 
     match /users/{userId} {
@@ -127,12 +142,28 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (isAdmin() || (resource.data.email == request.auth.token.email && resource.data.isPending == true));
     }
 
+    match /clients/{clientId} {
+      allow read: if isSignedIn();
+      allow create, update: if hasPermission('saidas') || hasPermission('financeiro') || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /slabOutlets/{outletId} {
+      allow read: if hasPermission('saidas') || isAdmin();
+      allow create: if (hasPermission('saidas') || isAdmin()) &&
+                    request.resource.data.userId == request.auth.uid &&
+                    isValidSlabOutlet(request.resource.data);
+      allow update: if (hasPermission('saidas') || isAdmin()) &&
+                    isValidSlabOutlet(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
     match /blockEntries/{entryId} {
       allow read: if hasProductionPermission();
       allow create: if hasProductionPermission() &&
                     request.resource.data.userId == request.auth.uid &&
                     isValidBlockEntry(request.resource.data);
-      allow update: if hasProductionPermission() &&
+      allow update: if (hasProductionPermission() || hasPermission('saidas')) &&
                     isValidBlockEntry(request.resource.data);
       allow delete: if isAdmin() || (hasProductionPermission() && resource.data.userId == request.auth.uid);
     }
@@ -144,11 +175,11 @@ service cloud.firestore {
     }
 
     match /slabEntries/{slabId} {
-      allow read: if hasProductionPermission();
+      allow read: if hasProductionPermission() || hasPermission('saidas');
       allow create: if hasProductionPermission() &&
                     request.resource.data.userId == request.auth.uid &&
                     isValidSlabEntry(request.resource.data);
-      allow update: if hasProductionPermission() &&
+      allow update: if (hasProductionPermission() || hasPermission('saidas')) &&
                     isValidSlabEntry(request.resource.data);
       allow delete: if isAdmin() || (hasProductionPermission() && resource.data.userId == request.auth.uid);
     }

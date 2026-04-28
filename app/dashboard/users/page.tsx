@@ -72,6 +72,7 @@ export default function UsersPage() {
     { id: 'polimento', name: 'Produção - Polimento' },
     { id: 'estoque', name: 'Produção - Estoque' },
     { id: 'quebrada', name: 'Produção - Quebradas' },
+    { id: 'saidas', name: 'Saídas (Expedição/Vendas)' },
     { id: 'financeiro', name: 'Financeiro' },
     { id: 'relatorios', name: 'Relatórios' },
     { id: 'usuarios', name: 'Usuários' },

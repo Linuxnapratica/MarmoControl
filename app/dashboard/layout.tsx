@@ -15,7 +15,8 @@ import {
   User,
   ShieldAlert,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  ShoppingCart
 } from 'lucide-react';
 import { logout } from '@/lib/firebase';
 import Link from 'next/link';
@@ -33,6 +34,7 @@ function SidebarNav({ isSidebarOpen, expandedMenus, toggleMenu, profile, isAdmin
       path: '/dashboard/producao', 
       permissionCheck: (hp: any) => hp('producao') || hp('entrada') || hp('serragem') || hp('acido') || hp('resina') || hp('polimento') || hp('estoque') || hp('quebrada')
     },
+    { name: 'Saídas', icon: ShoppingCart, path: '/dashboard/saidas', permission: 'saidas' },
     { name: 'Usuário', icon: Users, path: '/dashboard/users', adminOnly: true },
     { name: 'Logs de Auditoria', icon: ShieldAlert, path: '/dashboard/audit-logs', adminOnly: true },
     { name: 'Perfil', icon: User, path: '/dashboard/perfil' },
