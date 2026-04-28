@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useSettings } from '@/lib/settings-context';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { motion } from 'motion/react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Settings as SettingsIcon, 
   Save, 
@@ -15,14 +16,16 @@ import {
   Globe,
   Loader2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Upload,
+  Link as LinkIcon
 } from 'lucide-react';
-import { logEvent } from '@/lib/audit';
 
 export default function SettingsPage() {
   const { isAdmin, user, profile } = useAuth();
   const { settings, loading: settingsLoading } = useSettings();
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState<{ [key: string]: boolean }>({});
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +63,39 @@ export default function SettingsPage() {
       </div>
     );
   }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'logoUrl' | 'loginLogoUrl') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate type
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor, selecione uma imagem válida.');
+      return;
+    }
+
+    setIsUploading(prev => ({ ...prev, [field]: true }));
+    setError(null);
+
+    try {
+      const storageRef = ref(storage, `branding/${field}_${Date.now()}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      setFormData(prev => ({ ...prev, [field]: downloadURL }));
+      
+      await logEvent({
+        event: `Imagem de branding (${field}) enviada`,
+        details: `Arquivo: ${file.name}`,
+        type: 'upload'
+      });
+    } catch (err: any) {
+      console.error(err);
+      setError('Erro ao enviar imagem. Verifique as permissões de armazenamento.');
+    } finally {
+      setIsUploading(prev => ({ ...prev, [field]: false }));
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,7 +153,7 @@ export default function SettingsPage() {
             <h2 className="text-lg font-bold text-slate-900 tracking-tight italic uppercase">Identidade Geral</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nome do Sistema</label>
               <div className="relative">
@@ -133,19 +169,55 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">URL da Logomarca (Sidebar)</label>
-              <div className="relative">
-                <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="url"
-                  value={formData.logoUrl}
-                  onChange={(e) => setFormData(prev => ({ ...prev, logoUrl: e.target.value }))}
-                  placeholder="https://exemplo.com/logo.png"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium"
-                />
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center justify-between">
+                  <span>Logomarca (Sidebar)</span>
+                  <span className="text-[8px] text-blue-500 italic lowercase tracking-normal">Recomendado square ou 2:1</span>
+                </label>
+                
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                    <input
+                      type="url"
+                      value={formData.logoUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, logoUrl: e.target.value }))}
+                      placeholder="URL da imagem..."
+                      className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-xs font-medium"
+                    />
+                  </div>
+                  
+                  <label className="cursor-pointer group">
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, 'logoUrl')}
+                      disabled={isUploading['logoUrl']}
+                    />
+                    <div className="h-full px-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition-all">
+                      {isUploading['logoUrl'] ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                    </div>
+                  </label>
+                </div>
               </div>
-              <p className="text-[10px] text-slate-400 ml-1">Logo que aparece no topo do menu lateral (2:1 ou square recomendado).</p>
+
+              {formData.logoUrl && (
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200 border border-slate-200 shrink-0">
+                    <img src={formData.logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Preview Atual</p>
+                    <p className="text-[10px] text-slate-600 truncate max-w-xs">{formData.logoUrl}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -160,7 +232,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Título de Boas-vindas</label>
                 <input
@@ -171,15 +243,38 @@ export default function SettingsPage() {
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium"
                 />
               </div>
+
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Logomarca (Tela Login)</label>
-                <input
-                  type="url"
-                  value={formData.loginLogoUrl}
-                  onChange={(e) => setFormData(prev => ({ ...prev, loginLogoUrl: e.target.value }))}
-                  placeholder="https://exemplo.com/login-logo.png"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium"
-                />
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Logomarca (Login)</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                    <input
+                      type="url"
+                      value={formData.loginLogoUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, loginLogoUrl: e.target.value }))}
+                      placeholder="URL da imagem..."
+                      className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-xs font-medium"
+                    />
+                  </div>
+                  
+                  <label className="cursor-pointer group">
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, 'loginLogoUrl')}
+                      disabled={isUploading['loginLogoUrl']}
+                    />
+                    <div className="h-full px-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition-all">
+                      {isUploading['loginLogoUrl'] ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                      ) : (
+                        <Upload className="w-4 h-4" />
+                      )}
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -190,7 +285,7 @@ export default function SettingsPage() {
                 value={formData.loginWelcomeSubtitle}
                 onChange={(e) => setFormData(prev => ({ ...prev, loginWelcomeSubtitle: e.target.value }))}
                 placeholder="Descreva seu sistema na tela de login..."
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium resize-none"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium resize-none shadow-sm"
               />
             </div>
           </div>
