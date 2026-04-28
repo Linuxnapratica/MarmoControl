@@ -13,7 +13,9 @@ import {
   X as XIcon,
   HardHat,
   User,
-  ShieldAlert
+  ShieldAlert,
+  Clock,
+  ShieldCheck
 } from 'lucide-react';
 import { logout } from '@/lib/firebase';
 import Link from 'next/link';
@@ -24,12 +26,12 @@ function SidebarNav({ isSidebarOpen, expandedMenus, toggleMenu, profile, isAdmin
   const searchParams = useSearchParams();
   
   const menuItems: any[] = [
-    { name: 'Painel', icon: LayoutDashboard, path: '/dashboard' },
+    { name: 'Painel', icon: LayoutDashboard, path: '/dashboard', permission: 'dashboard' },
     { 
       name: 'Produção', 
       icon: HardHat, 
       path: '/dashboard/producao', 
-      permission: 'producao'
+      permissionCheck: (hp: any) => hp('producao') || hp('entrada') || hp('serragem') || hp('acido') || hp('resina') || hp('polimento') || hp('estoque') || hp('quebrada')
     },
     { name: 'Usuário', icon: Users, path: '/dashboard/users', adminOnly: true },
     { name: 'Logs de Auditoria', icon: ShieldAlert, path: '/dashboard/audit-logs', adminOnly: true },
@@ -40,7 +42,17 @@ function SidebarNav({ isSidebarOpen, expandedMenus, toggleMenu, profile, isAdmin
     <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
       {menuItems.map((item) => {
         if (item.adminOnly && !isAdmin) return null;
-        if (item.permission && !hasPermission(item.permission) && !isAdmin) return null;
+        
+        let allowed = true;
+        if (!isAdmin) {
+          if (item.permissionCheck) {
+            allowed = item.permissionCheck(hasPermission);
+          } else if (item.permission) {
+            allowed = hasPermission(item.permission);
+          }
+        }
+        
+        if (!allowed) return null;
         const isActive = pathname === item.path;
         const hasChildren = item.children && item.children.length > 0;
         const isExpanded = expandedMenus[item.name];
@@ -100,7 +112,7 @@ function SidebarNav({ isSidebarOpen, expandedMenus, toggleMenu, profile, isAdmin
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile, isAdmin, hasPermission, loading } = useAuth();
+  const { user, profile, isAdmin, isAuthorized, hasPermission, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
@@ -135,6 +147,52 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 text-blue-600">
         <span className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Pending Authorization Screen
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border border-slate-200 text-center space-y-6"
+        >
+          <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
+            <Clock className="w-10 h-10" />
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Acesso Pendente</h1>
+            <p className="text-slate-500 text-sm">
+              Olá, <span className="font-bold text-slate-900">{profile?.name}</span>. Seu cadastro foi recebido com sucesso.
+            </p>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex gap-3 text-left">
+            <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-800 leading-relaxed">
+              <span className="font-bold block mb-1">Aguarde, seu cadastro está sendo avaliado.</span>
+              Um administrador revisará sua solicitação e liberará os módulos do sistema em breve. Você receberá acesso assim que a avaliação for concluída.
+            </p>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100">
+            <button
+              onClick={() => logout()}
+              className="flex items-center gap-2 px-6 py-3 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all mx-auto font-bold text-xs uppercase tracking-widest"
+            >
+              <LogOut className="w-4 h-4" />
+              Sair da Conta
+            </button>
+          </div>
+          
+          <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">
+            MARMOCONTROL - SISTEMA DE GESTÃO
+          </p>
+        </motion.div>
       </div>
     );
   }

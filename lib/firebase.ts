@@ -55,7 +55,7 @@ async function handleProfileSync(user: any) {
         role: existingData.role || (isAdminEmail ? 'admin' : 'member'),
         phone: existingData.phone || '',
         createdAt: existingData.createdAt || new Date().toISOString(),
-        permissions: existingData.permissions || null
+        permissions: existingData.permissions || {}
       });
     } else {
       await setDoc(userRef, {
@@ -64,7 +64,8 @@ async function handleProfileSync(user: any) {
         email: user.email || '',
         photoURL: user.photoURL || '',
         role: isAdminEmail ? 'admin' : 'member',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        permissions: {}
       });
     }
   } else {
@@ -114,7 +115,7 @@ export const signUpWithEmail = async (email: string, pass: string, name: string,
   let role = isAdminEmail ? 'admin' : 'member';
   let createdAt = new Date().toISOString();
   let userPhone = phone;
-  let permissions = null;
+  let permissions = {};
   
   try {
     // Check for pending invite
@@ -127,7 +128,7 @@ export const signUpWithEmail = async (email: string, pass: string, name: string,
       role = existingData.role || role;
       createdAt = existingData.createdAt || createdAt;
       userPhone = existingData.phone || userPhone;
-      permissions = existingData.permissions || null;
+      permissions = existingData.permissions || {};
       
       // Delete the placeholder doc if it's not the same as our new UID
       if (existingDoc.id !== user.uid) {

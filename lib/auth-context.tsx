@@ -29,6 +29,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  isAuthorized: boolean;
   hasPermission: (permission: string) => boolean;
 }
 
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isAdmin: false,
+  isAuthorized: false,
   hasPermission: () => false,
 });
 
@@ -105,13 +107,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const isAdmin = profile?.role === 'admin';
 
+  const isAuthorized = isAdmin || (profile?.permissions !== undefined && profile?.permissions !== null && Object.values(profile.permissions).some(v => v === true));
+
   const hasPermission = (permission: string) => {
     if (isAdmin) return true;
     return profile?.permissions?.[permission] === true;
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, hasPermission }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, isAuthorized, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );
