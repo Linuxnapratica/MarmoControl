@@ -356,7 +356,7 @@ function ProducaoContent() {
 
   const handleSawingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || (!hasPermission('producao') && !isAdmin)) return;
+    if (!user || (!hasPermission('producao') && !hasPermission('serragem') && !isAdmin)) return;
 
     if (!selectedBlockId || !numSlabs || !slabLength || !slabHeight) {
       alert('Preencha todos os campos da serragem.');
@@ -462,8 +462,14 @@ function ProducaoContent() {
     const idsToUpdate = idsOverride || selectedSlabs;
     console.log('Bulk Status Update Triggered:', { targetStatus, idsToUpdate, user: user?.uid });
     
-    if (idsToUpdate.length === 0 || !user) {
-      console.warn('Blocked move: No IDs or no user.');
+    const hasAnyProductionPermission = isAdmin || hasPermission('producao') || 
+      ['entrada', 'serragem', 'acido', 'resina', 'polimento', 'estoque', 'quebrada'].some(p => hasPermission(p));
+
+    if (idsToUpdate.length === 0 || !user || !hasAnyProductionPermission) {
+      if (!user || !hasAnyProductionPermission) {
+        alert('Você não tem permissão para realizar esta operação.');
+      }
+      console.warn('Blocked move: No IDs, no user or no permission.');
       return;
     }
     
@@ -601,7 +607,7 @@ function ProducaoContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || (!hasPermission('producao') && !isAdmin)) {
+    if (!user || (!hasPermission('producao') && !hasPermission('entrada') && !isAdmin)) {
       alert('Você não tem permissão para realizar esta operação.');
       return;
     }
