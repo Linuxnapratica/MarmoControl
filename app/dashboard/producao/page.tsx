@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { db, storage } from '@/lib/firebase';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -39,7 +39,8 @@ import {
   Beaker,
   ArrowRightCircle,
   History as HistoryIcon,
-  Printer
+  Printer,
+  Camera
 } from 'lucide-react';
 
 interface BlockEntry {
@@ -175,6 +176,10 @@ function ProducaoContent() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<string | null>(null);
   const [isDeleteSlabDialogOpen, setIsDeleteSlabDialogOpen] = useState<string | null>(null); // New: delete slab
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false); // New: bulk delete
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTargetIds, setUploadTargetIds] = useState<string[]>([]);
+  const [isBatchUpload, setIsBatchUpload] = useState(false);
 
   // Auto-calculate volume for form
   const volume = (typeof length === 'number' && typeof height === 'number' && typeof width === 'number') 
@@ -308,19 +313,42 @@ function ProducaoContent() {
           alert(`Erro ao enviar a foto: ${error.message}`);
         }
       }, 
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((url) => {
-          if (isEdit && editingSlab) {
+      async () => {
+        try {
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          
+          if (uploadTargetIds.length > 0) {
+            const batch = writeBatch(db);
+            uploadTargetIds.forEach(id => {
+              if (!id) return;
+              batch.update(doc(db, 'slabEntries', id), { photoUrl: url });
+            });
+            await batch.commit();
+            alert(`${uploadTargetIds.length} chapa(s) atualizada(s) com a foto com sucesso!`);
+            setUploadTargetIds([]);
+          } else if (isEdit && editingSlab) {
             setEditingSlab({ ...editingSlab, photoUrl: url });
           } else {
             setSlabPhotoUrl(url);
           }
+        } catch (err) {
+          console.error('Error after upload:', err);
+          alert('Erro ao processar a foto após o envio.');
+        } finally {
           setIsUploading(false);
           setUploadProgress(0);
           if (e.target) e.target.value = '';
-        });
+        }
       }
     );
+  };
+
+  const triggerPhotoUpload = (ids: string[]) => {
+    setUploadTargetIds(ids);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''; // Clear to allow same file re-selection
+      fileInputRef.current.click();
+    }
   };
 
   const handleSawingSubmit = async (e: React.FormEvent) => {
@@ -884,6 +912,14 @@ function ProducaoContent() {
 
   return (
     <div className="space-y-8 pb-20">
+      {/* Hidden file input for photos */}
+      <input 
+        type="file" 
+        ref={fileInputRef}
+        className="hidden" 
+        accept="image/*"
+        onChange={handleFileUpload}
+      />
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Produção</h1>
@@ -2605,6 +2641,15 @@ function ProducaoContent() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => triggerPhotoUpload(selectedSlabs)}
+                    disabled={submitting || isUploading}
+                    className="flex items-center gap-1.5 px-2 py-1 bg-emerald-600 text-white text-[9px] font-black rounded-lg hover:bg-emerald-700 transition"
+                  >
+                    {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
+                    FOTO EM LOTE
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleBulkStatusUpdate('estoque')}
                     disabled={submitting}
                     className="flex items-center gap-1.5 px-2 py-1 bg-blue-600 text-white text-[9px] font-black rounded-lg hover:bg-blue-700 transition"
@@ -2716,22 +2761,38 @@ function ProducaoContent() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        {slab.photoUrl ? (
-                          <button 
-                            type="button"
-                            onClick={() => setPreviewImage(slab.photoUrl || null)}
-                            className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-blue-500 transition-all group/photo relative"
-                          >
-                            <img src={slab.photoUrl} alt="Chapa" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/photo:opacity-100 flex items-center justify-center transition-opacity">
-                              <Eye className="w-3 h-3 text-white" />
+                        <div className="flex items-center gap-2">
+                          {slab.photoUrl ? (
+                            <div className="relative group/photo-cell">
+                              <button 
+                                type="button"
+                                onClick={() => setPreviewImage(slab.photoUrl || null)}
+                                className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-blue-500 transition-all group/photo relative"
+                              >
+                                <img src={slab.photoUrl} alt="Chapa" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/photo:opacity-100 flex items-center justify-center transition-opacity">
+                                  <Eye className="w-3 h-3 text-white" />
+                                </div>
+                              </button>
+                              <button
+                                onClick={() => triggerPhotoUpload([slab.id])}
+                                className="absolute -top-1 -right-1 bg-white shadow-sm border border-slate-200 p-0.5 rounded-full text-slate-400 hover:text-blue-600 opacity-0 group-hover/photo-cell:opacity-100 transition-opacity"
+                                title="Alterar Foto"
+                              >
+                                <Camera className="w-3 h-3" />
+                              </button>
                             </div>
-                          </button>
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-slate-50 border border-dashed flex items-center justify-center text-slate-300">
-                            <ImageIcon className="w-4 h-4" />
-                          </div>
-                        )}
+                          ) : (
+                            <button
+                              onClick={() => triggerPhotoUpload([slab.id])}
+                              className="w-10 h-10 rounded-lg bg-slate-50 border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-100 hover:border-slate-400 transition-colors group/upload-btn"
+                              title="Adicionar Foto"
+                            >
+                              <Camera className="w-4 h-4 group-hover/upload-btn:scale-110 transition-transform" />
+                              <span className="text-[8px] font-bold uppercase">Add</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-slate-900 text-sm font-bold tracking-tight">
                         {slab.length?.toFixed(2).replace('.', ',')} x {slab.height?.toFixed(2).replace('.', ',')}
