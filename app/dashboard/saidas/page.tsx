@@ -64,8 +64,8 @@ interface SlabEntry {
   status: string;
   userName: string;
   createdAt: string;
-  photoURL?: string;
-  materialName?: string;
+  photoUrl?: string;
+  materialType?: string;
 }
 
 interface SlabOutlet {
@@ -411,9 +411,9 @@ export default function SaidasPage() {
                     }`}
                   >
                     <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 mb-3 group">
-                      {slab.photoURL ? (
+                      {slab.photoUrl ? (
                         <Image
-                          src={slab.photoURL}
+                          src={slab.photoUrl}
                           alt={slab.slabId}
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -441,7 +441,7 @@ export default function SaidasPage() {
                     <div className="space-y-1">
                       <div className="flex justify-between items-start">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Bloco: {slab.parentBlockId}</span>
-                        <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">ESTOQUE</span>
+                        <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{slab.materialType || 'CHAPA'}</span>
                       </div>
                       <h3 className="font-black text-slate-900 tracking-tight">{slab.slabId}</h3>
                       <div className="flex items-center gap-4 text-xs font-medium text-slate-500 pt-1">
@@ -672,8 +672,9 @@ export default function SaidasPage() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-slate-50">
+                          <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Foto</th>
                           <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID Chapa</th>
-                          <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bloco Origem</th>
+                          <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tipo</th>
                           <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Medidas (cm)</th>
                           <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Área (m²)</th>
                         </tr>
@@ -681,8 +682,28 @@ export default function SaidasPage() {
                       <tbody>
                         {slabs.filter(s => selectedSlabs.includes(s.id)).map(slab => (
                           <tr key={slab.id} className="border-t border-slate-50 hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-4 font-black text-slate-900 text-sm tracking-tight">{slab.slabId}</td>
-                            <td className="px-6 py-4 font-bold text-slate-500 text-xs">{slab.parentBlockId}</td>
+                            <td className="px-6 py-3">
+                              <div className="w-12 h-12 relative rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
+                                {slab.photoUrl ? (
+                                  <Image
+                                    src={slab.photoUrl}
+                                    alt={slab.slabId}
+                                    fill
+                                    className="object-cover"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                    <Package className="w-4 h-4" />
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="font-black text-slate-900 text-sm tracking-tight">{slab.slabId}</p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase">Bloco: {slab.parentBlockId}</p>
+                            </td>
+                            <td className="px-6 py-4 font-bold text-slate-500 text-xs uppercase">{slab.materialType || 'CHAPA'}</td>
                             <td className="px-6 py-4 text-center font-medium text-slate-600 text-xs">{slab.length} x {slab.height}</td>
                             <td className="px-6 py-4 text-right font-black text-blue-600 text-sm">{slab.area.toFixed(2).replace('.', ',')}</td>
                           </tr>
