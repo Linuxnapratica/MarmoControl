@@ -35,11 +35,15 @@ import {
   ArrowUpRight,
   History,
   Check,
-  X
+  X,
+  Printer,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { logEvent } from '@/lib/audit';
 import Image from 'next/image';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface Client {
   id: string;
@@ -61,6 +65,7 @@ interface SlabEntry {
   userName: string;
   createdAt: string;
   photoURL?: string;
+  materialName?: string;
 }
 
 interface SlabOutlet {
@@ -69,6 +74,7 @@ interface SlabOutlet {
   clientName: string;
   slabIds: string[];
   totalM2: number;
+  totalItems: number;
   outletDate: string;
   notes?: string;
   userName: string;
@@ -85,6 +91,7 @@ export default function SaidasPage() {
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [selectedSlabs, setSelectedSlabs] = useState<string[]>([]);
   const [showClientModal, setShowClientModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // New Client Form
@@ -167,6 +174,42 @@ export default function SaidasPage() {
     );
   };
 
+  const generatePDF = () => {
+    const client = clients.find(c => c.id === selectedClient);
+    const selectedSlabData = slabs.filter(s => selectedSlabs.includes(s.id));
+    
+    const doc = new jsPDF();
+    const title = `Relatório de Saída - ${client?.name || 'Cliente'}`;
+    
+    doc.setFontSize(20);
+    doc.text('Relatório de Expedição', 14, 22);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Cliente: ${client?.name || 'Não informado'}`, 14, 32);
+    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, 37);
+    doc.text(`Total de Chapas: ${selectedSlabs.length}`, 14, 42);
+    doc.text(`Total M2: ${selectedTotalArea.toFixed(2).replace('.', ',')}`, 14, 47);
+    doc.text(`Emitido por: ${profile?.name || 'Sistema'}`, 14, 52);
+
+    const tableData = selectedSlabData.map(s => [
+      s.slabId,
+      s.parentBlockId,
+      `${s.length} x ${s.height}`,
+      s.area.toFixed(2).replace('.', ',')
+    ]);
+
+    autoTable(doc, {
+      startY: 60,
+      head: [['ID Chapa', 'Bloco de Origem', 'Medidas (cm)', 'Área (m²)']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [37, 99, 235] },
+    });
+
+    doc.save(`saida_${client?.name?.toLowerCase().replace(/\s+/g, '_') || 'cliente'}_${new Date().getTime()}.pdf`);
+  };
+
   const handleFinishOutlet = async () => {
     if (!selectedClient || selectedSlabs.length === 0) {
       alert('Selecione um cliente e ao menos uma chapa.');
@@ -175,8 +218,6 @@ export default function SaidasPage() {
 
     const client = clients.find(c => c.id === selectedClient);
     if (!client) return;
-
-    if (!confirm(`Confirmar saída de ${selectedSlabs.length} chapas para ${client.name}?`)) return;
 
     setIsSubmitting(true);
     const batch = writeBatch(db);
@@ -220,6 +261,7 @@ export default function SaidasPage() {
 
       setSelectedSlabs([]);
       setSelectedClient('');
+      setShowReviewModal(false);
       alert('Saída registrada com sucesso!');
     } catch (error) {
       console.error(error);
@@ -269,7 +311,7 @@ export default function SaidasPage() {
             </div>
             
             <button
-              onClick={handleFinishOutlet}
+              onClick={() => setShowReviewModal(true)}
               disabled={isSubmitting || selectedSlabs.length === 0 || !selectedClient}
               className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 disabled:shadow-none transition-all"
             >
@@ -456,7 +498,7 @@ export default function SaidasPage() {
               </div>
 
               <button
-                onClick={handleFinishOutlet}
+                onClick={() => setShowReviewModal(true)}
                 disabled={isSubmitting || selectedSlabs.length === 0 || !selectedClient}
                 className="w-full py-4 bg-blue-600 rounded-2xl font-extrabold text-sm hover:bg-blue-500 active:scale-95 transition-all shadow-xl shadow-blue-900/40 flex items-center justify-center gap-2 mt-4 disabled:opacity-30 disabled:shadow-none"
               >
@@ -566,6 +608,127 @@ export default function SaidasPage() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Review & Report Modal */}
+      <AnimatePresence>
+        {showReviewModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowReviewModal(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-4xl bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Relatório de Saída</h2>
+                    <p className="text-sm text-slate-500">Revise os detalhes antes de finalizar a operação.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowReviewModal(false)}
+                  className="p-3 hover:bg-slate-100 rounded-2xl transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-8 pr-2">
+                {/* Client Info Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cliente</p>
+                    <p className="font-bold text-slate-900">{clients.find(c => c.id === selectedClient)?.name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Documento</p>
+                    <p className="font-medium text-slate-700">{clients.find(c => c.id === selectedClient)?.document || 'Não informado'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data de Saída</p>
+                    <p className="font-medium text-slate-700">{new Date().toLocaleDateString('pt-BR')}</p>
+                  </div>
+                </div>
+
+                {/* Slabs Table */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest px-2">Detalhamento das Chapas</h3>
+                  <div className="overflow-hidden rounded-3xl border border-slate-100">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50">
+                          <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID Chapa</th>
+                          <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bloco Origem</th>
+                          <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Medidas (cm)</th>
+                          <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Área (m²)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {slabs.filter(s => selectedSlabs.includes(s.id)).map(slab => (
+                          <tr key={slab.id} className="border-t border-slate-50 hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4 font-black text-slate-900 text-sm tracking-tight">{slab.slabId}</td>
+                            <td className="px-6 py-4 font-bold text-slate-500 text-xs">{slab.parentBlockId}</td>
+                            <td className="px-6 py-4 text-center font-medium text-slate-600 text-xs">{slab.length} x {slab.height}</td>
+                            <td className="px-6 py-4 text-right font-black text-blue-600 text-sm">{slab.area.toFixed(2).replace('.', ',')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-blue-50/50">
+                          <td colSpan={3} className="px-6 py-5 text-right font-bold text-slate-500 text-xs">TOTAL GERAL:</td>
+                          <td className="px-6 py-5 text-right font-black text-blue-600 text-lg">{selectedTotalArea.toFixed(2).replace('.', ',')} m²</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-8 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                <button
+                  onClick={generatePDF}
+                  className="flex items-center gap-2 px-6 py-3 bg-white text-slate-600 border-2 border-slate-100 rounded-2xl font-bold text-sm hover:border-slate-300 hover:bg-slate-50 transition-all"
+                >
+                  <Printer className="w-4 h-4" />
+                  Imprimir Relatório
+                </button>
+                
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowReviewModal(false)}
+                    className="px-6 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-all"
+                  >
+                    Voltar e Editar
+                  </button>
+                  <button
+                    onClick={handleFinishOutlet}
+                    disabled={isSubmitting}
+                    className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 transition-all"
+                  >
+                    {isSubmitting ? 'Finalizando...' : (
+                      <>
+                        Confirmar e Finalizar Saída
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}
