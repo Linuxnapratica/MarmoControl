@@ -8,6 +8,7 @@ export type AuditLogType =
   | 'user_update' 
   | 'user_delete'
   | 'security_access'
+  | 'user_auth_change'
   | 'update'
   | 'upload';
 
@@ -39,7 +40,16 @@ export async function logEvent(data: AuditLogData) {
       userName: currentUserName,
       timestamp: serverTimestamp()
     });
-  } catch (error) {
-    console.error('Failed to log audit event:', error);
+  } catch (error: any) {
+    const errInfo = {
+      error: error.message,
+      operationType: 'create',
+      path: 'audit_logs',
+      authInfo: {
+        userId: auth.currentUser?.uid,
+        email: auth.currentUser?.email,
+      }
+    };
+    console.error('Failed to log audit event:', JSON.stringify(errInfo));
   }
 }

@@ -33,7 +33,9 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     appName: settings?.appName || '',
     logoUrl: settings?.logoUrl || '',
+    logoSize: settings?.logoSize || 32,
     loginLogoUrl: settings?.loginLogoUrl || '',
+    loginLogoSize: settings?.loginLogoSize || 48,
     loginWelcomeTitle: settings?.loginWelcomeTitle || '',
     loginWelcomeSubtitle: settings?.loginWelcomeSubtitle || '',
   });
@@ -44,7 +46,9 @@ export default function SettingsPage() {
     setFormData({
       appName: settings.appName || '',
       logoUrl: settings.logoUrl || '',
+      logoSize: settings.logoSize || 32,
       loginLogoUrl: settings.loginLogoUrl || '',
+      loginLogoSize: settings.loginLogoSize || 48,
       loginWelcomeTitle: settings.loginWelcomeTitle || '',
       loginWelcomeSubtitle: settings.loginWelcomeSubtitle || '',
     });
@@ -213,12 +217,28 @@ export default function SettingsPage() {
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200 border border-slate-200 shrink-0">
                     <img src={formData.logoUrl} alt="Preview" className="w-full h-full object-contain" />
                   </div>
-                  <div className="overflow-hidden">
+                  <div className="overflow-hidden flex-1">
                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Preview Atual</p>
                     <p className="text-[10px] text-slate-600 truncate max-w-xs">{formData.logoUrl}</p>
                   </div>
                 </div>
               )}
+
+              <div className="space-y-1.5 pt-2">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tamanho da Logo (Sidebar)</label>
+                  <span className="text-[10px] font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{formData.logoSize}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="16"
+                  max="64"
+                  step="2"
+                  value={formData.logoSize}
+                  onChange={(e) => setFormData(prev => ({ ...prev, logoSize: parseInt(e.target.value) }))}
+                  className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -275,6 +295,22 @@ export default function SettingsPage() {
                       )}
                     </div>
                   </label>
+                </div>
+
+                <div className="space-y-1.5 pt-2">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tamanho da Logo (Login)</label>
+                    <span className="text-[10px] font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{formData.loginLogoSize}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="24"
+                    max="128"
+                    step="4"
+                    value={formData.loginLogoSize}
+                    onChange={(e) => setFormData(prev => ({ ...prev, loginLogoSize: parseInt(e.target.value) }))}
+                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
                 </div>
               </div>
             </div>
@@ -337,7 +373,10 @@ export default function SettingsPage() {
           <div className="flex flex-col items-center gap-2">
             <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Sidebar</p>
             <div className="bg-slate-900 p-4 rounded-xl flex items-center gap-3 min-w-[180px]">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-[10px] font-bold text-white overflow-hidden">
+              <div 
+                className="bg-blue-600 rounded-lg flex items-center justify-center text-[10px] font-bold text-white overflow-hidden"
+                style={{ width: formData.logoSize, height: formData.logoSize }}
+              >
                 {formData.logoUrl ? <img src={formData.logoUrl} alt="Logo Sidebar" className="w-full h-full object-cover" /> : formData.appName.substring(0, 2).toUpperCase()}
               </div>
               <span className="text-white font-bold text-sm">{formData.appName || 'MarmoControl'}</span>
@@ -347,7 +386,10 @@ export default function SettingsPage() {
           <div className="flex flex-col items-center gap-2">
             <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Login</p>
             <div className="bg-blue-600 p-6 rounded-xl flex flex-col gap-2 min-w-[200px] text-white">
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center overflow-hidden">
+              <div 
+                className="bg-white/20 rounded-lg flex items-center justify-center overflow-hidden"
+                style={{ width: formData.loginLogoSize, height: formData.loginLogoSize }}
+              >
                  {(formData.loginLogoUrl || formData.logoUrl) ? <img src={formData.loginLogoUrl || formData.logoUrl} alt="Logo Login" className="w-full h-full object-cover" /> : <Layout className="w-4 h-4" />}
               </div>
               <span className="font-bold text-lg">{formData.appName || 'MarmoControl'}</span>

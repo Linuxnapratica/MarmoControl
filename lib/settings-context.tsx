@@ -7,7 +7,9 @@ import { doc, onSnapshot } from 'firebase/firestore';
 interface AppSettings {
   appName: string;
   logoUrl?: string;
+  logoSize: number;
   loginLogoUrl?: string;
+  loginLogoSize: number;
   loginWelcomeTitle: string;
   loginWelcomeSubtitle: string;
 }
@@ -19,6 +21,8 @@ interface SettingsContextType {
 
 const defaultSettings: AppSettings = {
   appName: 'MarmoControl',
+  logoSize: 32,
+  loginLogoSize: 48,
   loginWelcomeTitle: 'Entre na sua conta',
   loginWelcomeSubtitle: 'Sistema de gestão inteligente para marmorarias.',
 };

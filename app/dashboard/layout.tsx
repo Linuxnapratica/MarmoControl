@@ -168,7 +168,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
             {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt={settings.appName} className="w-12 h-12 object-contain" />
+              <div style={{ width: settings.logoSize * 1.5, height: settings.logoSize * 1.5 }} className="relative">
+                <img src={settings.logoUrl} alt={settings.appName} className="w-full h-full object-contain" />
+              </div>
             ) : (
               <Clock className="w-10 h-10" />
             )}
@@ -224,14 +226,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         <div className="p-6 border-b border-slate-800 shrink-0">
           <Link href="/dashboard" className="text-xl font-bold tracking-tight text-white flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-xs shrink-0 overflow-hidden">
+            <div 
+              className="bg-blue-600 rounded-xl flex items-center justify-center text-xs shrink-0 overflow-hidden"
+              style={{ width: settings.logoSize, height: settings.logoSize }}
+            >
               {settings.logoUrl ? (
                 <img src={settings.logoUrl} alt={settings.appName} className="w-full h-full object-cover" />
               ) : (
                 settings.appName.substring(0, 2).toUpperCase()
               )}
             </div>
-            {isSidebarOpen && <span>{settings.appName}</span>}
+            {isSidebarOpen && <span className="truncate">{settings.appName}</span>}
           </Link>
         </div>
 

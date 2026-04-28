@@ -121,9 +121,12 @@ export default function LoginPage() {
         {/* Left Side - Info */}
         <div className="hidden lg:flex flex-col justify-between p-12 bg-blue-600 text-white relative overflow-hidden">
           <div className="relative z-10">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center mb-6 overflow-hidden">
+            <div 
+              className="bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center mb-6 overflow-hidden"
+              style={{ width: settings.loginLogoSize, height: settings.loginLogoSize }}
+            >
               {settings.loginLogoUrl || settings.logoUrl ? (
-                <img src={settings.loginLogoUrl || settings.logoUrl} alt="Logo" className="w-8 h-8 object-contain" />
+                <img src={settings.loginLogoUrl || settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
               ) : (
                 <LayoutDashboard className="w-6 h-6" />
               )}

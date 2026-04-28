@@ -91,7 +91,7 @@
         "timestamp": { "type": "string", "format": "date-time" },
         "type": { 
           "type": "string", 
-          "enum": ["login_success", "login_failure", "user_create", "user_update", "user_delete", "security_access"] 
+          "enum": ["login_success", "login_failure", "user_create", "user_update", "user_delete", "security_access", "user_auth_change", "update", "upload"] 
         }
       },
       "required": ["event", "timestamp", "type"]
@@ -137,7 +137,9 @@
       "properties": {
         "appName": { "type": "string", "default": "MarmoControl" },
         "logoUrl": { "type": "string" },
+        "logoSize": { "type": "number", "default": 24 },
         "loginLogoUrl": { "type": "string" },
+        "loginLogoSize": { "type": "number", "default": 48 },
         "loginWelcomeTitle": { "type": "string", "default": "Entre na sua conta" },
         "loginWelcomeSubtitle": { "type": "string", "default": "Sistema de gestão inteligente para marmorarias." },
         "updatedAt": { "type": "string", "format": "date-time" },

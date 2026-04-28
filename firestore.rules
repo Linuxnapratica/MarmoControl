@@ -118,7 +118,7 @@ service cloud.firestore {
     function isValidAuditLog(data) {
       return data.keys().hasAll(['event', 'timestamp', 'type']) &&
              data.event is string && data.event.size() <= 1000 &&
-             data.type in ["login_success", "login_failure", "user_create", "user_update", "user_delete", "security_access", "user_auth_change"];
+             data.type in ["login_success", "login_failure", "user_create", "user_update", "user_delete", "security_access", "user_auth_change", "update", "upload"];
     }
 
     match /users/{userId} {
