@@ -17,7 +17,7 @@ storage.maxUploadRetryTime = 20000;
 
 // Use initializeFirestore with settings for better stability
 export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId);
 
 // Test connection on boot as per guidelines
