@@ -101,7 +101,7 @@ export default function LoginPage() {
       } else if (error.code === 'auth/wrong-password') {
         setErrorMsg('Senha incorreta.');
       } else if (error.code === 'auth/email-already-in-use') {
-        setErrorMsg('Este e-mail já possui uma conta ativa.');
+        setErrorMsg('Este e-mail já possui uma conta ativa. Se você já foi cadastrado antes, tente fazer login em vez de criar uma nova conta.');
       } else if (error.code === 'auth/weak-password') {
         setErrorMsg('A senha deve ter pelo menos 6 caracteres.');
       } else {
