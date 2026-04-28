@@ -7,7 +7,9 @@ export type AuditLogType =
   | 'user_create' 
   | 'user_update' 
   | 'user_delete'
-  | 'security_access';
+  | 'security_access'
+  | 'update'
+  | 'upload';
 
 export interface AuditLogData {
   userId?: string | null;

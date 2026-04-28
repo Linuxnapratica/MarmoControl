@@ -20,6 +20,7 @@ import {
   Upload,
   Link as LinkIcon
 } from 'lucide-react';
+import { logEvent } from '@/lib/audit';
 
 export default function SettingsPage() {
   const { isAdmin, user, profile } = useAuth();
