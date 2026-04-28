@@ -147,36 +147,40 @@ export default function UsersPage() {
     if (!newEmail) return;
     setSubmitting(true);
 
+    const normalizedEmail = newEmail.trim().toLowerCase();
+    
     try {
       // Check if user already exists
-      const q = query(collection(db, 'users'), where('email', '==', newEmail));
+      const q = query(collection(db, 'users'), where('email', '==', normalizedEmail));
       const querySnap = await getDocs(q);
       
+      let targetId = `pending_${Date.now()}`;
+      let isUpdate = false;
+
       if (!querySnap.empty) {
-        alert('Este e-mail já está cadastrado no sistema.');
-        setSubmitting(false);
-        return;
+        // If user already exists, we'll update that document instead of erroring
+        targetId = querySnap.docs[0].id;
+        isUpdate = true;
       }
 
-      // Create a pending user document (we use email as temporary ID if we don't have UID)
-      // Actually, it's better to use a random ID or just a specific collection for invites
-      // For simplicity, we'll create a doc in users with a placeholder ID
-      const tempId = `pending_${Date.now()}`;
-      await setDoc(doc(db, 'users', tempId), {
-        email: newEmail,
+      const userData = {
+        email: normalizedEmail,
         phone: newPhone,
         role: newRole,
-        name: 'Pendente (Aguardando Login)',
+        name: isUpdate ? querySnap.docs[0].data().name : 'Pendente (Aguardando Login)',
         isPending: true,
-        createdAt: new Date().toISOString()
-      });
+        createdAt: isUpdate ? querySnap.docs[0].data().createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
 
-      // Log user creation
+      await setDoc(doc(db, 'users', targetId), userData, { merge: true });
+
+      // Log user creation/update
       await logEvent({
-        event: `Gestor criou novo usuário pendente: ${newEmail}`,
-        targetUserId: tempId,
-        targetUserName: newEmail,
-        type: 'user_create'
+        event: `${isUpdate ? 'Gestor re-ativou/atualizou' : 'Gestor criou novo'} usuário pendente: ${normalizedEmail}`,
+        targetUserId: targetId,
+        targetUserName: normalizedEmail,
+        type: isUpdate ? 'user_update' : 'user_create'
       });
 
       setIsModalOpen(false);
@@ -197,8 +201,10 @@ export default function UsersPage() {
     setSubmitting(true);
     try {
       const userRef = doc(db, 'users', editingUser.uid);
-      // Remove uid from data to update
+      // Remove uid from data to update and normalize email
       const { uid, ...data } = editingUser;
+      if (data.email) data.email = data.email.trim().toLowerCase();
+      
       await updateDoc(userRef, data as any);
 
       // Log user update
@@ -241,11 +247,21 @@ export default function UsersPage() {
     if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
     try {
       const targetUser = users.find(u => u.uid === userId);
+      const userEmail = targetUser?.email;
+
       await deleteDoc(doc(db, 'users', userId));
+
+      // Check for any other documents with the same email (duplicates or stray pending docs)
+      if (userEmail) {
+        const q = query(collection(db, 'users'), where('email', '==', userEmail.toLowerCase()));
+        const snap = await getDocs(q);
+        const batchDeletePromises = snap.docs.map(d => deleteDoc(d.ref));
+        await Promise.all(batchDeletePromises);
+      }
 
       // Log deletion
       await logEvent({
-        event: `Gestor excluiu o usuário: ${targetUser?.name || userId} (${targetUser?.email})`,
+        event: `Gestor excluiu o usuário: ${targetUser?.name || userId} (${userEmail})`,
         targetUserId: userId,
         targetUserName: targetUser?.name,
         type: 'user_delete'

@@ -34,11 +34,12 @@ async function handleProfileSync(user: any) {
     userSnap = await getDoc(userRef);
   }
   
-  const isAdminEmail = user.email === 'marioalbuquerquelins@gmail.com';
+  const normalizedEmail = user.email ? user.email.trim().toLowerCase() : '';
+  const isAdminEmail = normalizedEmail === 'marioalbuquerquelins@gmail.com';
   
   if (!userSnap.exists()) {
     // Check for pending invite
-    const q = query(collection(db, 'users'), where('email', '==', user.email));
+    const q = query(collection(db, 'users'), where('email', '==', normalizedEmail));
     const querySnap = await getDocs(q);
     
     if (!querySnap.empty) {
@@ -50,7 +51,7 @@ async function handleProfileSync(user: any) {
       await setDoc(userRef, {
         uid: user.uid,
         name: user.displayName || 'Usuário Marmo',
-        email: user.email || '',
+        email: normalizedEmail,
         photoURL: user.photoURL || '',
         role: existingData.role || (isAdminEmail ? 'admin' : 'member'),
         phone: existingData.phone || '',
@@ -61,7 +62,7 @@ async function handleProfileSync(user: any) {
       await setDoc(userRef, {
         uid: user.uid,
         name: user.displayName || 'Usuário Marmo',
-        email: user.email || '',
+        email: normalizedEmail,
         photoURL: user.photoURL || '',
         role: isAdminEmail ? 'admin' : 'member',
         createdAt: new Date().toISOString(),
@@ -74,6 +75,7 @@ async function handleProfileSync(user: any) {
     const updates: any = {};
     if (isAdminEmail && currentData.role !== 'admin') updates.role = 'admin';
     if (!currentData.name || currentData.name === 'No Name') updates.name = user.displayName || 'Usuário Marmo';
+    if (currentData.email !== normalizedEmail) updates.email = normalizedEmail;
     
     if (Object.keys(updates).length > 0) {
       await updateDoc(userRef, updates);
@@ -83,8 +85,8 @@ async function handleProfileSync(user: any) {
   // Log successful login
   await logEvent({
     userId: user.uid,
-    userName: user.displayName || user.email,
-    event: `Usuário ${user.email} realizou login com sucesso.`,
+    userName: user.displayName || normalizedEmail,
+    event: `Usuário ${normalizedEmail} realizou login com sucesso.`,
     type: 'login_success'
   });
 
@@ -107,11 +109,12 @@ export const signInWithEmail = async (email: string, pass: string) => {
 };
 
 export const signUpWithEmail = async (email: string, pass: string, name: string, phone: string = '') => {
-  const result = await createUserWithEmailAndPassword(auth, email, pass);
+  const normalizedEmail = email.trim().toLowerCase();
+  const result = await createUserWithEmailAndPassword(auth, normalizedEmail, pass);
   const user = result.user;
   
   const userRef = doc(db, 'users', user.uid);
-  const isAdminEmail = email === 'marioalbuquerquelins@gmail.com';
+  const isAdminEmail = normalizedEmail === 'marioalbuquerquelins@gmail.com';
   let role = isAdminEmail ? 'admin' : 'member';
   let createdAt = new Date().toISOString();
   let userPhone = phone;
@@ -119,7 +122,7 @@ export const signUpWithEmail = async (email: string, pass: string, name: string,
   
   try {
     // Check for pending invite
-    const q = query(collection(db, 'users'), where('email', '==', email));
+    const q = query(collection(db, 'users'), where('email', '==', normalizedEmail));
     const querySnap = await getDocs(q);
     
     if (!querySnap.empty) {
@@ -142,7 +145,7 @@ export const signUpWithEmail = async (email: string, pass: string, name: string,
   await setDoc(userRef, {
     uid: user.uid,
     name: name || 'Usuário Marmo',
-    email: email,
+    email: normalizedEmail,
     phone: userPhone,
     photoURL: '',
     role: role,
