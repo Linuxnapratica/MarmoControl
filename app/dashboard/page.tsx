@@ -165,6 +165,15 @@ export default function DashboardPage() {
              resinaDate.getFullYear() === today.getFullYear();
     }).length;
 
+    const slabsPolimentoToday = rawSlabs.filter(s => {
+      if (s.status !== 'polimento' || !s.polimentoDate) return false;
+      const polimentoDate = new Date(s.polimentoDate);
+      const today = new Date();
+      return polimentoDate.getDate() === today.getDate() && 
+             polimentoDate.getMonth() === today.getMonth() && 
+             polimentoDate.getFullYear() === today.getFullYear();
+    }).length;
+
     const activities = rawSlabs
       .slice()
       .sort((a, b) => {
@@ -201,6 +210,7 @@ export default function DashboardPage() {
       slabsPolidasToday,
       slabsAcidoToday,
       slabsResinaToday,
+      slabsPolimentoToday,
       stages,
       activities
     };
@@ -430,14 +440,14 @@ export default function DashboardPage() {
             Atividade Diária
             <Clock className="w-4 h-4 text-slate-300" />
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                <div className="flex items-center gap-3">
                  <div className="bg-blue-600 text-white p-2 rounded-lg">
                    <Layers className="w-4 h-4" />
                  </div>
                  <div>
-                   <p className="text-xs font-bold text-blue-900 leading-none mb-1">Cortes Hoje</p>
+                   <p className="text-xs font-bold text-blue-900 leading-none mb-1">Corte Hoje</p>
                    <p className="text-sm text-blue-700 font-medium">{statsData.slabsSerradasToday} chapas serradas hoje</p>
                  </div>
                </div>
@@ -449,7 +459,7 @@ export default function DashboardPage() {
                    <FlaskConical className="w-4 h-4" />
                  </div>
                  <div>
-                   <p className="text-xs font-bold text-amber-900 leading-none mb-1">Ácido Hoje</p>
+                   <p className="text-xs font-bold text-amber-900 leading-none mb-1">Ácido recebido hoje</p>
                    <p className="text-sm text-amber-700 font-medium">{statsData.slabsAcidoToday} chapas no ácido hoje</p>
                  </div>
                </div>
@@ -461,8 +471,20 @@ export default function DashboardPage() {
                    <Beaker className="w-4 h-4" />
                  </div>
                  <div>
-                   <p className="text-xs font-bold text-purple-900 leading-none mb-1">Resina Hoje</p>
+                   <p className="text-xs font-bold text-purple-900 leading-none mb-1">Resina recebida Hoje</p>
                    <p className="text-sm text-purple-700 font-medium">{statsData.slabsResinaToday} chapas resinadas hoje</p>
+                 </div>
+               </div>
+            </div>
+
+            <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+               <div className="flex items-center gap-3">
+                 <div className="bg-emerald-600 text-white p-2 rounded-lg">
+                   <Layers className="w-4 h-4" />
+                 </div>
+                 <div>
+                   <p className="text-xs font-bold text-emerald-900 leading-none mb-1">Polimento recebidas Hoje</p>
+                   <p className="text-sm text-emerald-700 font-medium">{statsData.slabsPolimentoToday} chapas no polimento hoje</p>
                  </div>
                </div>
             </div>

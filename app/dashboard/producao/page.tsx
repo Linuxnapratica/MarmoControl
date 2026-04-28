@@ -1792,7 +1792,7 @@ function ProducaoContent() {
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-slate-900 text-lg font-black tracking-tight">
+                        <td className="px-6 py-4 text-slate-900 text-sm font-bold tracking-tight">
                           {slab.length?.toFixed(2).replace('.', ',')} x {slab.height?.toFixed(2).replace('.', ',')}
                         </td>
                         <td className="px-6 py-4 font-bold text-blue-600 text-sm">
@@ -2045,7 +2045,7 @@ function ProducaoContent() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-900 text-lg font-black tracking-tight">
+                      <td className="px-6 py-4 text-slate-900 text-sm font-bold tracking-tight">
                         {slab.length?.toFixed(2).replace('.', ',')} x {slab.height?.toFixed(2).replace('.', ',')}
                       </td>
                       <td className="px-6 py-4 font-bold text-blue-600 text-sm">
@@ -2287,7 +2287,7 @@ function ProducaoContent() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-900 text-lg font-black tracking-tight">
+                      <td className="px-6 py-4 text-slate-900 text-sm font-bold tracking-tight">
                         {slab.length?.toFixed(2).replace('.', ',')} x {slab.height?.toFixed(2).replace('.', ',')}
                       </td>
                       <td className="px-6 py-4 font-bold text-blue-600 text-sm">
@@ -2518,7 +2518,7 @@ function ProducaoContent() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-900 text-lg font-black tracking-tight">
+                      <td className="px-6 py-4 text-slate-900 text-sm font-bold tracking-tight">
                         {slab.length?.toFixed(2).replace('.', ',')} x {slab.height?.toFixed(2).replace('.', ',')}
                       </td>
                       <td className="px-6 py-4 font-bold text-blue-600 text-sm">
@@ -2733,7 +2733,7 @@ function ProducaoContent() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-900 text-lg font-black tracking-tight">
+                      <td className="px-6 py-4 text-slate-900 text-sm font-bold tracking-tight">
                         {slab.length?.toFixed(2).replace('.', ',')} x {slab.height?.toFixed(2).replace('.', ',')}
                       </td>
                       <td className="px-6 py-4 font-bold text-blue-600 text-sm">
@@ -2953,7 +2953,7 @@ function ProducaoContent() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-900 text-lg font-black tracking-tight">
+                      <td className="px-6 py-4 text-slate-900 text-sm font-bold tracking-tight">
                         {slab.length?.toFixed(2).replace('.', ',')} x {slab.height?.toFixed(2).replace('.', ',')}
                       </td>
                       <td className="px-6 py-4 font-bold text-blue-600 text-sm">
